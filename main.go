@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -25,12 +26,11 @@ func check(err error) {
 }
 func (d download) Run() error {
 	req, err := d.getNewRequest("GET")
-	// fmt.Println(req)
 	if err != nil {
 		return err
 	}
 	res, err := http.DefaultClient.Do(req)
-	fmt.Println(res.Status)
+	// fmt.Println(res.Status)
 	if res.StatusCode > 299 {
 		return errors.New(fmt.Sprintf("Can't process,response code is %v", res.StatusCode))
 	}
@@ -43,7 +43,6 @@ func (d download) Run() error {
 	fmt.Printf("each size of sections is %v\n", each_size)
 
 	for i := range sections {
-		// fmt.Println(i)
 		if i == 0 {
 			sections[i][0] = 0
 		} else {
@@ -87,7 +86,6 @@ func (d download) mergeFiles(sections [][2]int) error {
 			return err
 		}
 		n, err := file.Write(data)
-		fmt.Println(n)
 		if err != nil {
 			return err
 		}
@@ -137,14 +135,29 @@ func (d download) getNewRequest(method string) (*http.Request, error) {
 
 }
 func main() {
+	p := fmt.Println
+
 	start_time := time.Now()
+
+	urlptr := flag.String("url", "", "Download url")
+	pathptr := flag.String("path", "",
+		"Path to save downloding file with file name like: /path/someting.pdf")
+	numptr := flag.Int("n", 5,
+		"OPTIONAL: Number of go routin to download file sections")
+
+	flag.Parse()
+	p("Download address:", *urlptr)
+	p("Path to save file:", *pathptr)
+	p("Number of goroutine to donwload file:", *numptr)
+
 	my_download := download{
-		Url:          "https://bitcoin.org/bitcoin.pdf",
-		TargetPath:   "bitcoin-white-paper.pdf",
-		TotalSegment: 5,
+		Url:          *urlptr,  //"https://bitcoin.org/bitcoin.pdf"
+		TargetPath:   *pathptr, //"bitcoin-white-paper.pdf"
+		TotalSegment: *numptr,  //5
 	}
+
 	err := my_download.Run()
 	check(err)
-	fmt.Printf("download is complete.\tTotaltime is %v\n", time.Now().Sub(start_time))
+	fmt.Printf("download is complete.\nTotaltime is %v\n", time.Now().Sub(start_time))
 
 }
